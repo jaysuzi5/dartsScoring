@@ -4,106 +4,11 @@
   <meta charset="UTF-8">
   <title>Dart Scorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #1c1f26, #2a2e38);
-      color: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-
-    .card {
-      background: #2f3442;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      padding: 20px;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 10px;
-      color: #4fc3f7;
-    }
-
-    .round {
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-    }
-
-    .display {
-      font-size: 2rem;
-      font-weight: bold;
-      background: #1f232c;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-    }
-
-    .keypad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .btn {
-      background: #3a4152;
-      border: none;
-      border-radius: 12px;
-      padding: 20px;
-      font-size: 1.2rem;
-      color: #fff;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .btn:hover {
-      background: #4fc3f7;
-      color: #000;
-    }
-
-    .btn-wide {
-      grid-column: span 3;
-    }
-
-    .average {
-      font-size: 1.2rem;
-      margin-bottom: 15px;
-    }
-
-    .completed {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #81c784;
-      margin-bottom: 20px;
-    }
-
-    .reset-btn {
-      background: #ef5350;
-      border: none;
-      border-radius: 12px;
-      padding: 15px 20px;
-      font-size: 1.1rem;
-      color: #fff;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .reset-btn:hover {
-      background: #e57373;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="card">
-    <h1>Dart Scorer v1.0.1</h1>
+    <h1>Dart Scorer v1.0.3</h1>
     <div class="round" id="round">Round 1 of 10</div>
     <div class="display" id="display">0</div>
 
@@ -124,8 +29,10 @@
 
     <div class="average" id="average">Average: 0.0</div>
     <div id="completed"></div>
+    <div id="error" style="color: red; font-weight: bold; margin-top: 10px;"></div>
     <button class="reset-btn" id="reset" style="display:none;">Reset</button>
   </div>
+
   <script>
     const display = document.getElementById('display');
     const keypad = document.getElementById('keypad');
@@ -133,6 +40,7 @@
     const averageText = document.getElementById('average');
     const completedText = document.getElementById('completed');
     const resetBtn = document.getElementById('reset');
+    const errorText = document.getElementById('error');
 
     let currentInput = "";
     let scores = [];
@@ -173,13 +81,15 @@
     async function finishGame() {
       roundText.textContent = "";
       keypad.style.display = "none";
+      errorText.textContent = "";
       const total = scores.reduce((a, b) => a + b, 0);
       const throws = scores.length;
       const avg = (total / throws).toFixed(1);
+      const maxScore = Math.max(...scores);
       completedText.innerHTML = `<div class="completed">Completed!<br>Average: ${avg}</div>`;
       resetBtn.style.display = "inline-block";
 
-      // 🔹 Post results to backend API
+      // Post results to backend API
       try {
         console.log("Posting score to backend...");
         const response = await fetch("http://192.168.86.234/api/v1/darts", {
@@ -192,7 +102,8 @@
             game: "score training",
             game_type: "practice",
             throws: throws,
-            score: total
+            score: total,
+            max_score: maxScore
           })
         });
 
@@ -203,6 +114,7 @@
         console.log("Score posted successfully");
       } catch (err) {
         console.error("Failed to post score:", err);
+        errorText.textContent = "⚠️ Failed to save score to server.";
       }
     }
 
@@ -215,6 +127,7 @@
       roundText.textContent = "Round 1 of 10";
       keypad.style.display = "grid";
       completedText.innerHTML = "";
+      errorText.textContent = "";
       resetBtn.style.display = "none";
     }
 
@@ -237,7 +150,5 @@
     updateDisplay();
     updateAverage();
   </script>
-
-
 </body>
 </html>
