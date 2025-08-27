@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dart Scorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="card">
+    <h1>501: Single-Out v1.0.0</h1>
+    <div class="round" id="round">Score Remaining: 501</div>
+    <div class="display" id="display">0</div>
+
+    <div class="keypad" id="keypad">
+      <button class="btn">1</button>
+      <button class="btn">2</button>
+      <button class="btn">3</button>
+      <button class="btn">4</button>
+      <button class="btn">5</button>
+      <button class="btn">6</button>
+      <button class="btn">7</button>
+      <button class="btn">8</button>
+      <button class="btn">9</button>
+      <button class="btn">0</button>
+      <button class="btn">⌫</button>
+      <button class="btn btn-wide">Enter</button>
+    </div>
+
+    <div class="average" id="average">Throws: 0</div>
+    <div id="completed"></div>
+    <div id="error" style="color: red; font-weight: bold; margin-top: 10px;"></div>
+    <button class="reset-btn" id="reset" style="display:none;">Reset</button>
+    <!-- Navigation menu -->
+    <nav>
+      <a href="scoring-practice.html">Scoring Practice</a>
+      <a href="501-single-out.html">501 Single Out</a>
+    </nav>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    const keypad = document.getElementById('keypad');
+    const roundText = document.getElementById('round');
+    const averageText = document.getElementById('average');
+    const completedText = document.getElementById('completed');
+    const resetBtn = document.getElementById('reset');
+    const errorText = document.getElementById('error');
+
+    let currentInput = "";
+    let scores = [];
+    let remaining = 501;
+
+    function updateDisplay() {
+      display.textContent = currentInput || "0";
+    }
+
+    function updateStats() {
+      const throws = scores.length;
+      averageText.textContent = `Throws: ${throws}`;
+      roundText.textContent = `Score Remaining: ${remaining}`;
+    }
+
+    function handleEnter() {
+      if (!currentInput) return;
+      const score = parseInt(currentInput, 10);
+      if (isNaN(score) || score <= 0) return;
+
+      // Prevent overshooting remaining score
+      if (score > remaining) {
+        errorText.textContent = "⚠️ Invalid score: exceeds remaining points.";
+        currentInput = "";
+        updateDisplay();
+        return;
+      }
+
+      scores.push(score);
+      remaining -= score;
+      currentInput = "";
+      updateDisplay();
+      updateStats();
+      errorText.textContent = "";
+
+      if (remaining === 0) {
+        finishGame();
+      }
+    }
+
+    async function finishGame() {
+      keypad.style.display = "none";
+      const throws = scores.length;
+      const maxScore = Math.max(...scores);
+
+      completedText.innerHTML = `<div class="completed">🏆 Completed in ${throws} throws!</div>`;
+      resetBtn.style.display = "inline-block";
+
+      // Post results to backend API
+      try {
+        console.log("Posting score to backend...");
+        const response = await fetch("http://192.168.86.234/api/v1/darts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            username: "jay",
+            game: "501 - single out",
+            game_type: "practice",
+            throws: throws,
+            score: 501,       // always 501 for this game mode
+            max_score: maxScore
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        console.log("Score posted successfully");
+      } catch (err) {
+        console.error("Failed to post score:", err);
+        errorText.textContent = "⚠️ Failed to save score to server.";
+      }
+    }
+
+    function resetGame() {
+      scores = [];
+      remaining = 501;
+      currentInput = "";
+      updateDisplay();
+      updateStats();
+      keypad.style.display = "grid";
+      completedText.innerHTML = "";
+      errorText.textContent = "";
+      resetBtn.style.display = "none";
+    }
+
+    keypad.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('btn')) return;
+      const val = e.target.textContent;
+
+      if (val === "⌫") {
+        currentInput = currentInput.slice(0, -1);
+      } else if (val === "Enter") {
+        handleEnter();
+      } else {
+        currentInput += val;
+      }
+      updateDisplay();
+    });
+
+    resetBtn.addEventListener('click', resetGame);
+
+    // Init UI
+    updateDisplay();
+    updateStats();
+  </script>
+</body>
+</html>
