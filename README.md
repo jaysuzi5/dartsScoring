@@ -7,9 +7,8 @@ but will start with a simple calculator for a 10 round scoring average.
 
 ```bash
 docker login
-docker build -t jaysuzi5/dart-scorer:latest .
-docker images | grep dart-scorer
-docker push jaysuzi5/dart-scorer:latest
-
-
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t jaysuzi5/dart-scorer:latest \
+  --push .
 ```
